@@ -257,10 +257,17 @@ function App() {
                       <span className="font-black">{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
                     </div>
                     <div className="info-badge part-info">
-                      파트당 예상:
-                      <span className="font-black ml-1">{formatTime(fileDuration / parts)}</span>
+                      실제 파일(중복 포함):
+                      <span className="font-black ml-1">
+                        약 {formatTime((fileDuration / parts) * 1.1)}
+                      </span>
                       <span className="mx-1">/</span>
-                      <span className="font-black">{((file.size / parts) / (1024 * 1024)).toFixed(1)} MB</span>
+                      <span className="font-black">
+                        {((file.size / parts * 1.1) / (1024 * 1024)).toFixed(1)} MB
+                      </span>
+                      <span className="ml-2 text-[10px] opacity-70">
+                        (중복: 약 {Math.round((fileDuration / parts) * 0.1)}초)
+                      </span>
                     </div>
                   </>
                 )}
