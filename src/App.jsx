@@ -127,24 +127,27 @@ function App() {
       const duration = await getDuration(file)
 
       const partDuration = duration / parts
-      const overlap = partDuration * 0.1
+      const overlap = duration * 0.05 // 전체 재생 시간의 5% 중복
 
       const outputs = []
 
       for (let i = 0; i < parts; i++) {
-        const start = Math.max(0, i * partDuration - (i > 0 ? overlap : 0))
-        const end = Math.min(duration, (i + 1) * partDuration + (i < parts - 1 ? overlap : 0))
+        const start = Math.max(0, i * partDuration - (i > 0 ? overlap / 2 : 0))
+        const end = Math.min(duration, (i + 1) * partDuration + (i < parts - 1 ? overlap / 2 : 0))
         const actualDuration = end - start
 
-        const outputName = `${baseName}_${i + 1}.${fileExt}`
+        const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`
         setStatus(`${i + 1}번 부분 분할 중... (${Math.round((i / parts) * 100)}%)`)
 
-        // -ss (start time) 를 파일 입력 전에 두면 더 빠름 (-accurate_seek)
+        // -avoid_negative_ts make_zero: 싱크 어긋남 방지
+        // -map 0: 모든 스트림 유지
         await ffmpeg.exec([
           '-ss', start.toString(),
           '-i', 'input',
           '-t', actualDuration.toString(),
-          '-c', 'copy', // 원본 품질 유지 (코덱 재인코딩 없음)
+          '-c', 'copy',
+          '-avoid_negative_ts', 'make_zero',
+          '-map', '0',
           outputName
         ])
 
@@ -259,14 +262,14 @@ function App() {
                     <div className="info-badge part-info">
                       실제 파일(중복 포함):
                       <span className="font-black ml-1">
-                        약 {formatTime((fileDuration / parts) * 1.1)}
+                        약 {formatTime((fileDuration + (parts - 1) * 2 * (fileDuration * 0.05)) / parts)}
                       </span>
                       <span className="mx-1">/</span>
                       <span className="font-black">
-                        {((file.size / parts * 1.1) / (1024 * 1024)).toFixed(1)} MB
+                        {(((file.size + (parts - 1) * 2 * (fileDuration * 0.05) / fileDuration * file.size)) / parts / (1024 * 1024)).toFixed(1)} MB
                       </span>
                       <span className="ml-2 text-[10px] opacity-70">
-                        (중복: 약 {Math.round((fileDuration / parts) * 0.1)}초)
+                        (중복: 5% - 약 {Math.round(fileDuration * 0.05)}초)
                       </span>
                     </div>
                   </>

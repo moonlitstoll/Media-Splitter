@@ -125,9 +125,11 @@ h1.title {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 700;
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  white-space: nowrap;
+  gap: 4px;
+  max-width: 100%;
 }
 
 .total-info {
@@ -247,11 +249,40 @@ h1.title {
 
 /* Response for Mobile */
 @media (max-width: 480px) {
-  .glass-card {
-    padding: 24px;
+  #root {
+    padding: 10px;
   }
 
-  h1 {
-    font-size: 2rem;
+  .glass-card {
+    padding: 20px 16px;
+  }
+
+  h1.title {
+    font-size: 1.8rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
+
+  .upload-zone {
+    padding: 32px 16px;
+  }
+
+  .info-badge {
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .options-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .option-btn {
+    padding: 10px 4px;
+    font-size: 0.85rem;
   }
 }
