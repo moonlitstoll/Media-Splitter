@@ -246,17 +246,26 @@ function App() {
             </div>
 
             <div className="mt-8">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-bold text-text-muted">분할 옵션 선택</label>
+              <label className="text-sm font-bold text-text-muted mb-3 block">분할 옵션 선택</label>
+
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 {file && (
-                  <div className="split-info-badge">
-                    파트당 예상:
-                    <span className="text-primary font-black ml-1">{formatTime(fileDuration / parts)}</span>
-                    <span className="mx-1">/</span>
-                    <span className="text-accent font-black">{((file.size / parts) / (1024 * 1024)).toFixed(1)} MB</span>
-                  </div>
+                  <>
+                    <div className="info-badge total-info">
+                      전체: <span className="font-black ml-1">{formatTime(fileDuration)}</span>
+                      <span className="mx-1">/</span>
+                      <span className="font-black">{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                    </div>
+                    <div className="info-badge part-info">
+                      파트당 예상:
+                      <span className="font-black ml-1">{formatTime(fileDuration / parts)}</span>
+                      <span className="mx-1">/</span>
+                      <span className="font-black">{((file.size / parts) / (1024 * 1024)).toFixed(1)} MB</span>
+                    </div>
+                  </>
                 )}
               </div>
+
               <div className="options-grid">
                 {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(num => (
                   <button
