@@ -14,7 +14,7 @@ function App() {
   const [progress, setProgress] = useState(0)
   const [resultFiles, setResultFiles] = useState([])
   const [error, setError] = useState('')
-
+  const [fileDuration, setFileDuration] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
 
   const ffmpegRef = useRef(new FFmpeg())
@@ -62,7 +62,7 @@ function App() {
     setIsDragging(false)
   }
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault()
     setIsDragging(false)
     const droppedFile = e.dataTransfer.files[0]
@@ -70,16 +70,30 @@ function App() {
       setFile(droppedFile)
       setResultFiles([])
       setError('')
+      const dur = await getDuration(droppedFile)
+      setFileDuration(dur)
     }
   }
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0]
     if (selectedFile) {
       setFile(selectedFile)
       setResultFiles([])
       setError('')
+      const dur = await getDuration(selectedFile)
+      setFileDuration(dur)
     }
+  }
+
+  const formatTime = (seconds) => {
+    if (!seconds) return '0초'
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = Math.floor(seconds % 60)
+    if (h > 0) return `${h}시간 ${m}분 ${s}초`
+    if (m > 0) return `${m}분 ${s}초`
+    return `${s}초`
   }
 
   const getDuration = async (file) => {
@@ -232,7 +246,14 @@ function App() {
             </div>
 
             <div className="mt-8">
-              <label className="text-sm font-bold text-text-muted mb-3 block">분할 옵션 선택</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-bold text-text-muted">분할 옵션 선택</label>
+                {file && fileDuration > 0 && (
+                  <div className="split-info-badge">
+                    각 파트 예상: <span className="text-primary font-black">{formatTime(fileDuration / parts)}</span>
+                  </div>
+                )}
+              </div>
               <div className="options-grid">
                 {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
                   <button

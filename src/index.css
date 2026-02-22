@@ -197,6 +197,23 @@ h1.title {
   margin-bottom: 8px;
 }
 
+.split-info-badge {
+  background: #eef2ff;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #e0e7ff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
 /* Response for Mobile */
 @media (max-width: 480px) {
   .glass-card {
