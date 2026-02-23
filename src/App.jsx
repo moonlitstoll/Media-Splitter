@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
-import { Upload, Scissors, CheckCircle2, Loader2, Download, AlertCircle } from 'lucide-react'
+import { Upload, Scissors, CheckCircle2, Loader2, Download, AlertCircle, Minus, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './index.css'
 
@@ -276,17 +276,27 @@ function App() {
                 )}
               </div>
 
-              <div className="options-grid">
-                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(num => (
+              <div className="counter-section">
+                <div className="counter-container">
                   <button
-                    key={num}
-                    className={`option-btn ${parts === num ? 'active' : ''}`}
-                    onClick={() => setParts(num)}
+                    className="counter-btn"
+                    onClick={() => setParts(Math.max(2, parts - 1))}
+                    disabled={processing || parts <= 2}
+                  >
+                    <Minus size={20} />
+                  </button>
+                  <div className="counter-value">
+                    <span className="number">{parts}</span>
+                    <span className="unit">등분</span>
+                  </div>
+                  <button
+                    className="counter-btn"
+                    onClick={() => setParts(parts + 1)}
                     disabled={processing}
                   >
-                    {num}등분
+                    <Plus size={20} />
                   </button>
-                ))}
+                </div>
               </div>
             </div>
 

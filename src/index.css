@@ -103,79 +103,70 @@ h1.title {
   margin-bottom: 16px;
 }
 
-/* Split Options */
-.options-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin: 24px 0;
-}
-
-.ml-1 {
-  margin-left: 0.25rem;
-}
-
-.mx-1 {
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
-}
-
-.info-badge {
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 700;
+/* Counter Option */
+.counter-section {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: center;
+  margin: 32px 0;
+}
+
+.counter-container {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  max-width: 100%;
+  background: #f1f5f9;
+  padding: 8px;
+  border-radius: 20px;
+  gap: 16px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.total-info {
-  background: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
-}
-
-.part-info {
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #e0e7ff;
-}
-
-.font-black {
-  font-weight: 900;
-}
-
-.flex-wrap {
-  flex-wrap: wrap;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
-.option-btn {
+.counter-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: white;
   border: 1px solid #e2e8f0;
-  color: var(--text-main);
-  padding: 12px;
-  border-radius: 12px;
+  border-radius: 16px;
+  color: var(--primary);
   cursor: pointer;
-  font-weight: 600;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.option-btn:hover {
-  background: #f8fafc;
-}
-
-.option-btn.active {
+.counter-btn:hover:not(:disabled) {
   background: var(--primary);
-  border-color: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  transform: translateY(-2px);
+}
+
+.counter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #cbd5e1;
+}
+
+.counter-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 100px;
+  justify-content: center;
+}
+
+.counter-value .number {
+  font-size: 2.5rem;
+  font-weight: 850;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-value .unit {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 .split-btn {
@@ -277,12 +268,7 @@ h1.title {
     justify-content: center;
   }
 
-  .options-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .option-btn {
-    padding: 10px 4px;
-    font-size: 0.85rem;
+  .counter-value .number {
+    font-size: 2rem;
   }
 }
