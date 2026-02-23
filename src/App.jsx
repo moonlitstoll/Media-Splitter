@@ -127,7 +127,7 @@ function App() {
       const duration = await getDuration(file)
 
       const partDuration = duration / parts
-      const overlap = duration * 0.05 // 전체 재생 시간의 5% 중복
+      const overlap = 20 // 20초 고정 중복
 
       const outputs = []
 
@@ -262,14 +262,14 @@ function App() {
                     <div className="info-badge part-info">
                       실제 파일(중복 포함):
                       <span className="font-black ml-1">
-                        약 {formatTime((fileDuration + (parts - 1) * 2 * (fileDuration * 0.05)) / parts)}
+                        약 {formatTime((fileDuration + (parts - 1) * 20) / parts)}
                       </span>
                       <span className="mx-1">/</span>
                       <span className="font-black">
-                        {(((file.size + (parts - 1) * 2 * (fileDuration * 0.05) / fileDuration * file.size)) / parts / (1024 * 1024)).toFixed(1)} MB
+                        {(((file.size + (parts - 1) * 20 / fileDuration * file.size)) / parts / (1024 * 1024)).toFixed(1)} MB
                       </span>
                       <span className="ml-2 text-[10px] opacity-70">
-                        (중복: 5% - 약 {Math.round(fileDuration * 0.05)}초)
+                        (중복: 20초 고정)
                       </span>
                     </div>
                   </>
