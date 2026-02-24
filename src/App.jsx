@@ -127,37 +127,25 @@ function App() {
       const duration = await getDuration(file)
 
       const partDuration = duration / parts
-      const overlap = 20 // 20초 고정 중복
+      const overlap = 0 // 중복 구간 0초 (스트림 복사 방식을 위해 제거)
 
       const outputs = []
 
       for (let i = 0; i < parts; i++) {
-        const start = Math.max(0, i * partDuration - (i > 0 ? overlap / 2 : 0))
-        const end = Math.min(duration, (i + 1) * partDuration + (i < parts - 1 ? overlap / 2 : 0))
+        const start = i * partDuration
+        const end = (i + 1) * partDuration
         const actualDuration = end - start
 
         const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`
         setStatus(`${i + 1}번 부분 분할 중... (${Math.round((i / parts) * 100)}%)`)
 
-        // 고정 중복 구간을 포함하여 정확하게 분할하기 위해 재인코딩(Re-encoding) 수행
-        // -c:v libx264: H.264 코덱으로 재인코딩 (프레임 정확도 보장)
-        // -crf 23: 화질과 용량의 균형점 (값이 작을수록 고화질)
-        // -c:a aac: 오디오 표준 코덱 적용
-        // -movflags +faststart: 웹 브라우저에서 스트리밍 및 빠른 재생이 가능하도록 헤더 최적화
+        // 중복 없이 스트림 복사(-c copy) 수행: 초고속 자르기, 메모리 부하 제로
         await ffmpeg.exec([
           '-ss', start.toString(),
           '-i', 'input',
           '-t', actualDuration.toString(),
-          '-c:v', 'libx264',
-          '-crf', '23',
-          '-pix_fmt', 'yuv420p',
-          '-c:a', 'aac',
-          '-b:a', '128k',
-          '-ar', '44100',
-          '-avoid_negative_ts', 'make_zero',
-          '-movflags', '+faststart',
-          '-map', '0:v:0',
-          '-map', '0:a:0',
+          '-c', 'copy',
+          '-avoid_negative_ts', '1',
           outputName
         ])
 
@@ -270,16 +258,13 @@ function App() {
                       <span className="font-black">{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
                     </div>
                     <div className="info-badge part-info">
-                      실제 파일(중복 포함):
+                      분할당 약:
                       <span className="font-black ml-1">
-                        약 {formatTime((fileDuration + (parts - 1) * 20) / parts)}
+                        {formatTime(fileDuration / parts)}
                       </span>
                       <span className="mx-1">/</span>
                       <span className="font-black">
-                        {(((file.size + (parts - 1) * 20 / fileDuration * file.size)) / parts / (1024 * 1024)).toFixed(1)} MB
-                      </span>
-                      <span className="ml-2 text-[10px] opacity-70">
-                        (중복: 20초 고정)
+                        {((file.size / parts) / (1024 * 1024)).toFixed(1)} MB
                       </span>
                     </div>
                   </>
