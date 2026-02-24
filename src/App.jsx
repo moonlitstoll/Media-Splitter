@@ -139,14 +139,20 @@ function App() {
         const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`
         setStatus(`${i + 1}번 부분 분할 중... (${Math.round((i / parts) * 100)}%)`)
 
-        // -avoid_negative_ts make_zero: 싱크 어긋남 방지
-        // -map 0: 모든 스트림 유지
+        // 고정 중복 구간을 포함하여 정확하게 분할하기 위해 재인코딩(Re-encoding) 수행
+        // -c:v libx264: H.264 코덱으로 재인코딩 (프레임 정확도 보장)
+        // -crf 23: 화질과 용량의 균형점 (값이 작을수록 고화질)
+        // -c:a aac: 오디오 표준 코덱 적용
+        // -movflags +faststart: 웹 브라우저에서 스트리밍 및 빠른 재생이 가능하도록 헤더 최적화
         await ffmpeg.exec([
           '-ss', start.toString(),
           '-i', 'input',
           '-t', actualDuration.toString(),
-          '-c', 'copy',
+          '-c:v', 'libx264',
+          '-crf', '23',
+          '-c:a', 'aac',
           '-avoid_negative_ts', 'make_zero',
+          '-movflags', '+faststart',
           '-map', '0',
           outputName
         ])
