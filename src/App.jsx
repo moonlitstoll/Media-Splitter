@@ -150,10 +150,14 @@ function App() {
           '-t', actualDuration.toString(),
           '-c:v', 'libx264',
           '-crf', '23',
+          '-pix_fmt', 'yuv420p',
           '-c:a', 'aac',
+          '-b:a', '128k',
+          '-ar', '44100',
           '-avoid_negative_ts', 'make_zero',
           '-movflags', '+faststart',
-          '-map', '0',
+          '-map', '0:v:0',
+          '-map', '0:a:0',
           outputName
         ])
 
