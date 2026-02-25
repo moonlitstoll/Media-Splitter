@@ -26,7 +26,7 @@ function App() {
   const loadFFmpeg = async () => {
     try {
       setStatus('Initializing system infrastructure...')
-      // unpkg 대신 더 안정적인 jsdelivr 사용
+      // Using more stable jsdelivr instead of unpkg
       const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm'
       const ffmpeg = ffmpegRef.current
 
@@ -127,7 +127,7 @@ function App() {
       const duration = await getDuration(file)
 
       const partDuration = duration / parts
-      const overlap = 0 // 중복 구간 0초 (스트림 복사 방식을 위해 제거)
+      const overlap = 0 // 0 seconds overlap (removed for stream copy method)
 
       const outputs = []
 
@@ -139,7 +139,7 @@ function App() {
         const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`
         setStatus(`Splitting part ${i + 1}... (${Math.round((i / parts) * 100)}%)`)
 
-        // 중복 없이 스트림 복사(-c copy) 수행: 초고속 자르기, 메모리 부하 제로
+        // Perform stream copy (-c copy) without overlap: ultra-fast cutting, zero memory load
         await ffmpeg.exec([
           '-ss', start.toString(),
           '-i', 'input',
