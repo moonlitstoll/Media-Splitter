@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
-import { Upload, Scissors, CheckCircle2, Loader2, Download, AlertCircle, Minus, Plus } from 'lucide-react'
+import { Upload, Scissors, CheckCircle2, Loader2, Download, AlertCircle, Minus, Plus, Lock, ShieldCheck, Clock, HardDrive, Hash } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './index.css'
 
 function App() {
   const [loaded, setLoaded] = useState(false)
   const [file, setFile] = useState(null)
+  const [splitMode, setSplitMode] = useState('parts')
   const [parts, setParts] = useState(2)
+  const [splitSize, setSplitSize] = useState(10)
+  const [splitTime, setSplitTime] = useState(60)
   const [processing, setProcessing] = useState(false)
   const [status, setStatus] = useState('')
   const [progress, setProgress] = useState(0)
@@ -126,18 +129,36 @@ function App() {
       setStatus('Analyzing duration...')
       const duration = await getDuration(file)
 
-      const partDuration = duration / parts
-      const overlap = 0 // 0 seconds overlap (removed for stream copy method)
+      const overlap = 0
 
       const outputs = []
+      let currentParts = parts;
+      let currentPartDuration = duration / parts;
 
-      for (let i = 0; i < parts; i++) {
-        const start = i * partDuration
-        const end = (i + 1) * partDuration
-        const actualDuration = end - start
+      if (splitMode === 'size') {
+        const totalSizeMB = file.size / (1024 * 1024);
+        currentParts = Math.ceil(totalSizeMB / splitSize);
+        if (currentParts < 1) currentParts = 1;
+        currentPartDuration = duration / currentParts;
+      } else if (splitMode === 'time') {
+        currentParts = Math.ceil(duration / splitTime);
+        if (currentParts < 1) currentParts = 1;
+        currentPartDuration = splitTime;
+      } else {
+        currentParts = parts;
+        currentPartDuration = duration / parts;
+      }
 
-        const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`
-        setStatus(`Splitting part ${i + 1}... (${Math.round((i / parts) * 100)}%)`)
+      for (let i = 0; i < currentParts; i++) {
+        const start = i * currentPartDuration;
+        let end = (i + 1) * currentPartDuration;
+        if (end > duration) end = duration;
+        const actualDuration = end - start;
+
+        if (actualDuration <= 0) break;
+
+        const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`;
+        setStatus(`Splitting part ${i + 1} of ${currentParts}... (${Math.round((i / currentParts) * 100)}%)`);
 
         // Perform stream copy (-c copy) without overlap: ultra-fast cutting, zero memory load
         await ffmpeg.exec([
@@ -249,6 +270,30 @@ function App() {
             <div className="mt-8">
               <label className="text-sm font-bold text-text-muted mb-3 block">Select Split Options</label>
 
+              <div className="flex bg-white/50 p-1 rounded-xl mb-6 shadow-sm border border-white/20">
+                <button
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${splitMode === 'parts' ? 'bg-white shadow-md text-primary' : 'text-text-muted hover:bg-white/40'}`}
+                  onClick={() => setSplitMode('parts')}
+                  disabled={processing}
+                >
+                  <Hash size={16} /> Equal Parts
+                </button>
+                <button
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${splitMode === 'size' ? 'bg-white shadow-md text-primary' : 'text-text-muted hover:bg-white/40'}`}
+                  onClick={() => setSplitMode('size')}
+                  disabled={processing}
+                >
+                  <HardDrive size={16} /> By Size
+                </button>
+                <button
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${splitMode === 'time' ? 'bg-white shadow-md text-primary' : 'text-text-muted hover:bg-white/40'}`}
+                  onClick={() => setSplitMode('time')}
+                  disabled={processing}
+                >
+                  <Clock size={16} /> By Time
+                </button>
+              </div>
+
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 {file && (
                   <>
@@ -257,41 +302,107 @@ function App() {
                       <span className="mx-1">/</span>
                       <span className="font-black">{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
                     </div>
-                    <div className="info-badge part-info">
-                      Per split approx:
-                      <span className="font-black ml-1">
-                        {formatTime(fileDuration / parts)}
-                      </span>
-                      <span className="mx-1">/</span>
-                      <span className="font-black">
-                        {((file.size / parts) / (1024 * 1024)).toFixed(1)} MB
-                      </span>
-                    </div>
+                    {splitMode === 'parts' && (
+                      <div className="info-badge part-info">
+                        Per split approx:
+                        <span className="font-black ml-1">
+                          {formatTime(fileDuration / parts)}
+                        </span>
+                        <span className="mx-1">/</span>
+                        <span className="font-black">
+                          {((file.size / parts) / (1024 * 1024)).toFixed(1)} MB
+                        </span>
+                      </div>
+                    )}
+                    {splitMode === 'size' && (
+                      <div className="info-badge part-info">
+                        Est. Parts:
+                        <span className="font-black ml-1">
+                          {Math.max(1, Math.ceil((file.size / (1024 * 1024)) / splitSize))}
+                        </span>
+                      </div>
+                    )}
+                    {splitMode === 'time' && (
+                      <div className="info-badge part-info">
+                        Est. Parts:
+                        <span className="font-black ml-1">
+                          {Math.max(1, Math.ceil(fileDuration / splitTime))}
+                        </span>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
 
               <div className="counter-section">
-                <div className="counter-container">
-                  <button
-                    className="counter-btn"
-                    onClick={() => setParts(Math.max(2, parts - 1))}
-                    disabled={processing || parts <= 2}
-                  >
-                    <Minus size={20} />
-                  </button>
-                  <div className="counter-value">
-                    <span className="number">{parts}</span>
-                    <span className="unit">Parts</span>
+                {splitMode === 'parts' && (
+                  <div className="counter-container">
+                    <button
+                      className="counter-btn"
+                      onClick={() => setParts(Math.max(2, parts - 1))}
+                      disabled={processing || parts <= 2}
+                    >
+                      <Minus size={20} />
+                    </button>
+                    <div className="counter-value">
+                      <span className="number">{parts}</span>
+                      <span className="unit">Parts</span>
+                    </div>
+                    <button
+                      className="counter-btn"
+                      onClick={() => setParts(parts + 1)}
+                      disabled={processing}
+                    >
+                      <Plus size={20} />
+                    </button>
                   </div>
-                  <button
-                    className="counter-btn"
-                    onClick={() => setParts(parts + 1)}
-                    disabled={processing}
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
+                )}
+
+                {splitMode === 'size' && (
+                  <div className="counter-container">
+                    <button
+                      className="counter-btn"
+                      onClick={() => setSplitSize(Math.max(1, splitSize - 5))}
+                      disabled={processing || splitSize <= 1}
+                    >
+                      <Minus size={20} />
+                    </button>
+                    <div className="counter-value">
+                      <span className="number">{splitSize}</span>
+                      <span className="unit">MB</span>
+                    </div>
+                    <button
+                      className="counter-btn"
+                      onClick={() => setSplitSize(splitSize + 5)}
+                      disabled={processing}
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                )}
+
+                {splitMode === 'time' && (
+                  <div className="counter-container">
+                    <button
+                      className="counter-btn"
+                      onClick={() => setSplitTime(Math.max(10, splitTime - 10))}
+                      disabled={processing || splitTime <= 10}
+                    >
+                      <Minus size={20} />
+                    </button>
+                    <div className="counter-value">
+                      <span className="number">{splitTime}</span>
+                      <span className="unit">Secs</span>
+                    </div>
+                    <button
+                      className="counter-btn"
+                      onClick={() => setSplitTime(splitTime + 10)}
+                      disabled={processing}
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -364,6 +475,55 @@ function App() {
           </>
         )}
       </motion.div>
+
+      {/* Guide and FAQ Section */}
+      <div className="mt-12 max-w-2xl mx-auto space-y-8 text-left">
+        <section className="bg-white/40 p-6 rounded-2xl border border-white/20 shadow-sm backdrop-blur-md">
+          <h2 className="text-xl font-bold text-text-main mb-4 flex items-center gap-2">
+            <CheckCircle2 size={20} className="text-primary" /> How to Split Videos Without Losing Quality
+          </h2>
+          <p className="text-text-muted text-sm leading-relaxed mb-4">
+            Most video editing tools re-encode your media when you cut or split them. This process not only takes a massive amount of time but also degrades the quality of the original file.
+          </p>
+          <p className="text-text-muted text-sm leading-relaxed">
+            <strong>Media Splitter</strong> uses an advanced <em>Stream Copy</em> technique via WebAssembly FFmpeg. Instead of rendering the video again, it simply copies the exact original media streams into new containers. This means your video is split <strong>instantly</strong>, with absolutely <strong>zero quality loss</strong>.
+          </p>
+        </section>
+
+        <section className="bg-white/40 p-6 rounded-2xl border border-white/20 shadow-sm backdrop-blur-md">
+          <h2 className="text-xl font-bold text-text-main mb-4 flex items-center gap-2">
+            <ShieldCheck size={20} className="text-primary" /> Frequently Asked Questions (FAQ)
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-bold text-text-main text-sm">Is there a file size limit?</h3>
+              <p className="text-text-muted text-sm mt-1">No. Unlike cloud-based tools that limit you to 50MB or 100MB, Media Splitter runs entirely in your browser. You can split files of any size, even those that are several gigabytes.</p>
+            </div>
+            <div>
+              <h3 className="font-bold text-text-main text-sm">Are my files uploaded to a server?</h3>
+              <p className="text-text-muted text-sm mt-1">No. Your privacy is 100% guaranteed. All files are processed locally on your device. We never upload, store, or see your files.</p>
+            </div>
+            <div>
+              <h3 className="font-bold text-text-main text-sm">What formats are supported?</h3>
+              <p className="text-text-muted text-sm mt-1">We support standard media formats including MP4, MKV, AVI, MOV for video, and MP3, WAV for audio.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer className="mt-10 text-center text-sm text-text-muted pb-8 max-w-2xl mx-auto">
+        <div className="flex items-center justify-center gap-2 mb-3 bg-white/50 py-2 px-4 rounded-full w-fit mx-auto border border-white/20 shadow-sm">
+          <ShieldCheck size={16} className="text-green-600" />
+          <span className="font-semibold text-text-main">100% Secure & Private</span>
+        </div>
+        <p className="mb-2">
+          All processing is done completely locally within your browser. <br className="hidden sm:block" />
+          <strong className="text-text-main font-bold"><Lock size={12} className="inline mr-1" />No files are ever uploaded or sent to any external server.</strong>
+        </p>
+        <p className="text-xs opacity-70">
+          Media Splitter is a powerful, free tool designed to help you split large video and audio files with zero quality loss using direct stream copying technique.
+        </p>
+      </footer>
       <style>{`
         .flex { display: flex; }
         .flex-col { flex-direction: column; }
