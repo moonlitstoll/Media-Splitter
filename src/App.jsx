@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
-import { Upload, Scissors, CheckCircle2, Loader2, Download, AlertCircle, Minus, Plus, Lock, ShieldCheck, Clock, HardDrive, Hash } from 'lucide-react'
+import { Upload, Scissors, CheckCircle2, Loader2, Download, AlertCircle, Minus, Plus, Lock, ShieldCheck, Clock, HardDrive, Hash, Zap, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './index.css'
 
@@ -12,6 +12,7 @@ function App() {
   const [parts, setParts] = useState(2)
   const [splitSize, setSplitSize] = useState(10)
   const [splitTime, setSplitTime] = useState(60)
+  const [encodingMode, setEncodingMode] = useState('compatible')
   const [processing, setProcessing] = useState(false)
   const [status, setStatus] = useState('')
   const [progress, setProgress] = useState(0)
@@ -160,15 +161,27 @@ function App() {
         const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`;
         setStatus(`Splitting part ${i + 1} of ${currentParts}... (${Math.round((i / currentParts) * 100)}%)`);
 
-        // Perform stream copy (-c copy) without overlap: ultra-fast cutting, zero memory load
-        await ffmpeg.exec([
-          '-ss', start.toString(),
-          '-i', 'input',
-          '-t', actualDuration.toString(),
-          '-c', 'copy',
-          '-avoid_negative_ts', '1',
-          outputName
-        ])
+        // Build ffmpeg arguments based on encoding mode
+        const ffmpegArgs = ['-ss', start.toString(), '-i', 'input', '-t', actualDuration.toString()]
+
+        if (encodingMode === 'fast') {
+          // Stream copy mode: ultra-fast but may have seeking issues
+          ffmpegArgs.push('-c', 'copy', '-avoid_negative_ts', 'make_zero', '-movflags', '+faststart')
+        } else {
+          // Re-encode mode: slower but guarantees perfect seeking
+          ffmpegArgs.push(
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '18',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-movflags', '+faststart',
+            '-avoid_negative_ts', 'make_zero'
+          )
+        }
+        ffmpegArgs.push(outputName)
+
+        await ffmpeg.exec(ffmpegArgs)
 
         const data = await ffmpeg.readFile(outputName)
         const blob = new Blob([data.buffer], { type: file.type })
@@ -268,6 +281,34 @@ function App() {
             </div>
 
             <div className="mt-8">
+              <label className="text-sm font-bold text-text-muted mb-3 block">Encoding Mode</label>
+              <div className="flex bg-white/50 p-1 rounded-xl mb-6 shadow-sm border border-white/20">
+                <button
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${encodingMode === 'compatible' ? 'bg-white shadow-md text-primary' : 'text-text-muted hover:bg-white/40'}`}
+                  onClick={() => setEncodingMode('compatible')}
+                  disabled={processing}
+                >
+                  <Shield size={16} /> Compatible
+                </button>
+                <button
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${encodingMode === 'fast' ? 'bg-white shadow-md text-primary' : 'text-text-muted hover:bg-white/40'}`}
+                  onClick={() => setEncodingMode('fast')}
+                  disabled={processing}
+                >
+                  <Zap size={16} /> Fast
+                </button>
+              </div>
+              {encodingMode === 'compatible' && (
+                <div className="info-badge" style={{ background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)', marginBottom: '1rem', fontSize: '0.75rem' }}>
+                  <Shield size={14} style={{ marginRight: '0.25rem' }} /> Re-encodes for perfect seeking &amp; playback. Slightly slower.
+                </div>
+              )}
+              {encodingMode === 'fast' && (
+                <div className="info-badge" style={{ background: 'rgba(234,179,8,0.08)', color: '#ca8a04', border: '1px solid rgba(234,179,8,0.2)', marginBottom: '1rem', fontSize: '0.75rem' }}>
+                  <Zap size={14} style={{ marginRight: '0.25rem' }} /> Stream copy: instant speed, but seeking may not work on some players.
+                </div>
+              )}
+
               <label className="text-sm font-bold text-text-muted mb-3 block">Select Split Options</label>
 
               <div className="flex bg-white/50 p-1 rounded-xl mb-6 shadow-sm border border-white/20">
