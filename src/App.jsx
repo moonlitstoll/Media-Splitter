@@ -25,14 +25,14 @@ function App() {
 
   const loadFFmpeg = async () => {
     try {
-      setStatus('시스템 인프라 구축 중...')
+      setStatus('Initializing system infrastructure...')
       // unpkg 대신 더 안정적인 jsdelivr 사용
       const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm'
       const ffmpeg = ffmpegRef.current
 
       ffmpeg.on('log', ({ message }) => {
         console.log(message)
-        if (message.includes('error')) setStatus(`오류 발생: ${message.slice(0, 20)}...`)
+        if (message.includes('error')) setStatus(`Error: ${message.slice(0, 20)}...`)
       })
 
       ffmpeg.on('progress', ({ progress }) => {
@@ -49,7 +49,7 @@ function App() {
       setStatus('')
     } catch (err) {
       console.error('FFmpeg Load Error:', err)
-      setError(`로드 실패: ${err.message}. 네트워크 차단이나 브라우저 호환성 문제일 수 있습니다. (SharedArrayBuffer 확인 필요)`)
+      setError(`Load failed: ${err.message}. This might be a network block or browser compatibility issue. (SharedArrayBuffer needs to be enabled)`)
     }
   }
 
@@ -87,13 +87,13 @@ function App() {
   }
 
   const formatTime = (seconds) => {
-    if (!seconds) return '0초'
+    if (!seconds) return '0s'
     const h = Math.floor(seconds / 3600)
     const m = Math.floor((seconds % 3600) / 60)
     const s = Math.floor(seconds % 60)
-    if (h > 0) return `${h}시간 ${m}분 ${s}초`
-    if (m > 0) return `${m}분 ${s}초`
-    return `${s}초`
+    if (h > 0) return `${h}h ${m}m ${s}s`
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
   }
 
   const getDuration = async (file) => {
@@ -120,10 +120,10 @@ function App() {
       const fileExt = fileName.split('.').pop()
       const baseName = fileName.replace(`.${fileExt}`, '')
 
-      setStatus('미디어 파일 읽는 중...')
+      setStatus('Reading media file...')
       await ffmpeg.writeFile('input', await fetchFile(file))
 
-      setStatus('재생 시간 분석 중...')
+      setStatus('Analyzing duration...')
       const duration = await getDuration(file)
 
       const partDuration = duration / parts
@@ -137,7 +137,7 @@ function App() {
         const actualDuration = end - start
 
         const outputName = `${i + 1}_${baseName}_${i + 1}.${fileExt}`
-        setStatus(`${i + 1}번 부분 분할 중... (${Math.round((i / parts) * 100)}%)`)
+        setStatus(`Splitting part ${i + 1}... (${Math.round((i / parts) * 100)}%)`)
 
         // 중복 없이 스트림 복사(-c copy) 수행: 초고속 자르기, 메모리 부하 제로
         await ffmpeg.exec([
@@ -158,11 +158,11 @@ function App() {
       }
 
       setResultFiles(outputs)
-      setStatus('작업 완료!')
+      setStatus('Done!')
       setProgress(100)
     } catch (err) {
       console.error(err)
-      setError('오류가 발생했습니다. 파일 형식이 올바른지 확인해주세요.')
+      setError('An error occurred. Please check if the file format is valid.')
     } finally {
       setProcessing(false)
     }
@@ -187,12 +187,12 @@ function App() {
         className="glass-card"
       >
         <h1 className="title">Media Splitter</h1>
-        <p className="subtitle">원본 품질 그대로, 원하는 만큼 정교하게 분할하세요.</p>
+        <p className="subtitle">Maintain original quality, split precisely as many times as you want.</p>
 
         {!loaded && !error && (
           <div className="flex flex-col items-center py-10">
             <Loader2 className="animate-spin text-primary mb-4" size={40} />
-            <p className="text-muted">{status || '시스템을 준비하고 있습니다...'}</p>
+            <p className="text-muted">{status || 'Preparing the system...'}</p>
           </div>
         )}
 
@@ -200,13 +200,13 @@ function App() {
           <div className="bg-red-50 border border-red-200 text-red-600 p-5 rounded-2xl mb-6 flex items-start gap-3 text-sm">
             <AlertCircle size={20} className="mt-0.5 shrink-0" />
             <div>
-              <p className="font-bold mb-1">시스템 로드 오류</p>
+              <p className="font-bold mb-1">System Load Error</p>
               <p className="opacity-80">{error}</p>
               <button
                 onClick={() => window.location.reload()}
                 className="mt-3 text-xs font-bold underline cursor-pointer"
               >
-                페이지 새로고침 시도
+                Try reloading the page
               </button>
             </div>
           </div>
@@ -231,10 +231,10 @@ function App() {
 
               <div className="mb-4">
                 <p className="font-bold text-lg text-text-main">
-                  {file ? file.name : '미디어를 드래그하거나 선택하세요'}
+                  {file ? file.name : 'Drag and drop or select media'}
                 </p>
                 <p className="text-xs text-text-muted mt-1">
-                  {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'MP4, MKV, MP3 지원 (최대 용량 제한 없음)'}
+                  {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Supports MP4, MKV, MP3 (No max size limit)'}
                 </p>
               </div>
 
@@ -242,23 +242,23 @@ function App() {
                 className="upload-btn"
                 onClick={() => document.getElementById('fileInput').click()}
               >
-                파일 선택하기
+                Select File
               </button>
             </div>
 
             <div className="mt-8">
-              <label className="text-sm font-bold text-text-muted mb-3 block">분할 옵션 선택</label>
+              <label className="text-sm font-bold text-text-muted mb-3 block">Select Split Options</label>
 
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 {file && (
                   <>
                     <div className="info-badge total-info">
-                      전체: <span className="font-black ml-1">{formatTime(fileDuration)}</span>
+                      Total: <span className="font-black ml-1">{formatTime(fileDuration)}</span>
                       <span className="mx-1">/</span>
                       <span className="font-black">{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
                     </div>
                     <div className="info-badge part-info">
-                      분할당 약:
+                      Per split approx:
                       <span className="font-black ml-1">
                         {formatTime(fileDuration / parts)}
                       </span>
@@ -282,7 +282,7 @@ function App() {
                   </button>
                   <div className="counter-value">
                     <span className="number">{parts}</span>
-                    <span className="unit">등분</span>
+                    <span className="unit">Parts</span>
                   </div>
                   <button
                     className="counter-btn"
@@ -315,7 +315,7 @@ function App() {
                 onClick={splitMedia}
               >
                 <Scissors size={20} strokeWidth={2.5} />
-                분할 시작하기
+                Start Splitting
               </button>
             )}
 
@@ -327,7 +327,7 @@ function App() {
               >
                 <div className="flex items-center justify-center gap-2 text-accent mb-6 font-bold text-lg">
                   <CheckCircle2 size={24} />
-                  분할 완료!
+                  Split Complete!
                 </div>
 
                 <div className="space-y-3 mb-6">
@@ -335,7 +335,7 @@ function App() {
                     <div key={i} className="result-item">
                       <span className="truncate flex-1 mr-4 font-medium text-sm">{f.name}</span>
                       <a href={f.url} download={f.name} className="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-hover transition-colors flex items-center gap-1">
-                        <Download size={14} /> 다운로드
+                        <Download size={14} /> Download
                       </a>
                     </div>
                   ))}
@@ -346,7 +346,7 @@ function App() {
                   onClick={downloadAll}
                 >
                   <Download size={20} />
-                  전체 다운로드
+                  Download All
                 </button>
 
                 <button
@@ -357,7 +357,7 @@ function App() {
                     setProgress(0)
                   }}
                 >
-                  다른 파일 작업하기
+                  Process another file
                 </button>
               </motion.div>
             )}
