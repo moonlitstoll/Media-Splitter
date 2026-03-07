@@ -106,7 +106,14 @@ function App() {
       const url = URL.createObjectURL(file)
       video.preload = 'metadata'
 
+      // Set a 10-second timeout to prevent infinite pending state
+      const timeoutId = setTimeout(() => {
+        cleanup()
+        reject(new Error('Timeout: Failed to load video metadata within 10s'))
+      }, 10000)
+
       const cleanup = () => {
+        clearTimeout(timeoutId)
         video.onloadedmetadata = null
         video.onerror = null
         URL.revokeObjectURL(url)
@@ -144,7 +151,8 @@ function App() {
       await ffmpeg.writeFile('input', await fetchFile(file))
 
       setStatus('Analyzing duration...')
-      const duration = await getDuration(file)
+      // Use existing fileDuration if available, otherwise get it again
+      const duration = fileDuration || await getDuration(file)
       if (!duration || isNaN(duration)) throw new Error('Could not determine video duration')
 
       const overlap = 0
