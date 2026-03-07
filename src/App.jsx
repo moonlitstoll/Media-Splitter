@@ -28,9 +28,9 @@ function App() {
   }, [])
 
   const loadFFmpeg = async () => {
+    if (loaded) return
     try {
       setStatus('Initializing system infrastructure...')
-      // Using more stable jsdelivr instead of unpkg
       const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm'
       const ffmpeg = ffmpegRef.current
 
@@ -43,17 +43,17 @@ function App() {
         setProgress(Math.round(progress * 100))
       })
 
+      // @ffmpeg/core 0.12.6 dist/esm doesn't have a separate worker file
       await ffmpeg.load({
         coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
         wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
       })
 
       setLoaded(true)
       setStatus('')
     } catch (err) {
       console.error('FFmpeg Load Error:', err)
-      setError(`Load failed: ${err.message}. This might be a network block or browser compatibility issue. (SharedArrayBuffer needs to be enabled)`)
+      setError(`Load failed: ${err.message}. This might be a network block or browser compatibility issue.`)
     }
   }
 
@@ -101,13 +101,29 @@ function App() {
   }
 
   const getDuration = async (file) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const video = document.createElement('video')
+      const url = URL.createObjectURL(file)
       video.preload = 'metadata'
-      video.onloadedmetadata = () => {
-        resolve(video.duration)
+
+      const cleanup = () => {
+        video.onloadedmetadata = null
+        video.onerror = null
+        URL.revokeObjectURL(url)
       }
-      video.src = URL.createObjectURL(file)
+
+      video.onloadedmetadata = () => {
+        const duration = video.duration
+        cleanup()
+        resolve(duration)
+      }
+
+      video.onerror = () => {
+        cleanup()
+        reject(new Error('Failed to load video metadata'))
+      }
+
+      video.src = url
     })
   }
 
@@ -129,6 +145,7 @@ function App() {
 
       setStatus('Analyzing duration...')
       const duration = await getDuration(file)
+      if (!duration || isNaN(duration)) throw new Error('Could not determine video duration')
 
       const overlap = 0
 
