@@ -1,16 +1,36 @@
-# React + Vite
+# Media Splitter
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Browser-based video and audio splitter powered by FFmpeg WebAssembly. Files are processed locally in the browser — nothing is uploaded to a server.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Split by equal parts, target file size (MB), or fixed time intervals
+- Encoding modes: **Compatible** (re-encode) or **Fast** (stream copy)
+- Drag-and-drop or file picker
+- Download individual segments or all at once
 
-## React Compiler
+## Requirements
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Modern browser with `SharedArrayBuffer` support
+- Dev server and production host must send COOP/COEP headers (configured in `vite.config.js` and `public/_headers`)
 
-## Expanding the ESLint configuration
+## Scripts
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev      # start dev server
+npm run build    # production build
+npm run preview  # preview production build
+npm run probe -- path/to/video.mp4  # local ffprobe debug helper
+```
+
+## Project Structure
+
+```
+src/
+  components/   # UI components
+  hooks/        # React hooks (FFmpeg, media file)
+  services/     # Split orchestration
+  utils/        # Pure helpers (split plan, ffmpeg args, formatting)
+  App.jsx         # App shell
+```
